@@ -409,32 +409,18 @@ static int tabfs_mkdir(const char *path, mode_t mode) {
     return 0;
 }
 
-static int tabfs_create(const char *path, mode_t mode, struct fuse_file_info *fi) {
-    (void)fi;
+static int tabfs_mknod(const char *path, mode_t mode, dev_t rdev) {
+    (void)rdev;
 
     char *rdata;
     size_t rsize;
     exchange_json(&rdata, &rsize,
         "op: %Q, path: %Q, mode: %d",
-        "mkdir", path, mode);
+        "mknod", path, mode);
 
     parse_and_free_response(rdata, rsize, "");
 
     return 0;
-}
-
-#define want_capability(conn, flag) \
-    do { \
-        if (conn->capable & flag) { \
-            conn->want |= flag; \
-        } else { \
-            eprintln("warning: " #flag " not supported"); \
-        } \
-    } while (0)
-
-static void *tabfs_init(struct fuse_conn_info *conn) {
-    want_capability(conn, FUSE_CAP_ATOMIC_O_TRUNC);
-    return NULL;
 }
 
 static const struct fuse_operations tabfs_oper = {
@@ -454,9 +440,7 @@ static const struct fuse_operations tabfs_oper = {
     .unlink   = tabfs_unlink,
 
     .mkdir  = tabfs_mkdir,
-    .create = tabfs_create,
-
-    .init = tabfs_init,
+    .mknod = tabfs_mknod,
 };
 
 int main(int argc, char **argv) {
